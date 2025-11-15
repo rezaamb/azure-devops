@@ -7,20 +7,21 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
+# 1) گرفتن سورس
 - checkout: self
 
-# 1) فقط برای اطمینان از نسخه‌ی dotnet
+# 2) اطلاعات دات‌نت (فقط برای دیباگ و اطمینان)
 - pwsh: |
     & "C:\Program Files\dotnet\dotnet.exe" --info
   displayName: 'Dotnet info'
 
-# 2) Restore
+# 3) Restore پکیج‌ها
 - pwsh: |
     & "C:\Program Files\dotnet\dotnet.exe" restore `
       "Taday.Corelibrary/Taday.Corelibrary.csproj"
   displayName: 'Restore'
 
-# 3) Build + Pack (خود پروژه GeneratePackageOnBuild=true دارد)
+# 4) Build + Pack (با GeneratePackageOnBuild و خروجی در ArtifactStagingDirectory)
 - pwsh: |
     & "C:\Program Files\dotnet\dotnet.exe" build `
       "Taday.Corelibrary/Taday.Corelibrary.csproj" `
@@ -29,7 +30,7 @@ steps:
       /p:PackageOutputPath=$(Build.ArtifactStagingDirectory)
   displayName: 'Build & Pack'
 
-# 4) Push به فید با Windows Auth (بدون PAT)
+# 5) Push پکیج‌ها به Azure Artifacts با Windows Auth
 - pwsh: |
     Write-Host "Packages in $(Build.ArtifactStagingDirectory):"
     Get-ChildItem "$(Build.ArtifactStagingDirectory)" -Filter *.nupkg | ForEach-Object {
@@ -39,5 +40,6 @@ steps:
     & "C:\Program Files\dotnet\dotnet.exe" nuget push `
       "$(Build.ArtifactStagingDirectory)\*.nupkg" `
       --source "Taday.CoreLibraryPackages" `
+      --api-key "AzureDevOps" `
       --skip-duplicate
   displayName: 'Push package to Azure Artifacts via Windows Auth'
