@@ -1,24 +1,34 @@
-trigger: none
+trigger:
+  branches:
+    include:
+      - main
+      - develop
 
 pool:
-  name: Test
+  name: 'CoreLibraryPublish'
 
 variables:
   buildConfiguration: 'Release'
 
 steps:
-# 1) گرفتن سورس
-- checkout: self
+# بررسی نسخه‌ی فعلی .NET در Agent برای شفافیت
+#- script: dotnet --info
+ # displayName: 'Show .NET SDK info (before install)'
+#- checkout: self
+ # persistCredentials: true 
 
-# 2) Dotnet info  (فقط دیباگ)
-- task: CmdLine@2
-  displayName: 'Dotnet info'
-  env:
-    PATH: 'C:\Program Files\dotnet;$(PATH)'
+# install SDK version 9.0
+- task: UseDotNet@2
+  displayName: 'Install .NET 9 SDK'
   inputs:
-    script: 'dotnet --info'
+    packageType: 'sdk'
+    version: '9.0.x'
+    includePreviewVersions: true
 
-# 3) Restore پکیج‌ها
+- script: dotnet --info
+  displayName: 'Show .NET SDK info (after install)'
+
+# 3) Restore 
 - task: DotNetCoreCLI@2
   displayName: 'Restore'
   env:
@@ -27,7 +37,7 @@ steps:
     command: 'restore'
     projects: 'Taday.Corelibrary/Taday.Corelibrary.csproj'
 
-# 4) Build + Pack (GeneratePackageOnBuild + خروجی در ArtifactStagingDirectory)
+# 4) Build + Pack 
 - task: DotNetCoreCLI@2
   displayName: 'Build & Pack'
   env:
@@ -40,7 +50,7 @@ steps:
       /p:GeneratePackageOnBuild=true
       /p:PackageOutputPath=$(Build.ArtifactStagingDirectory)
 
-# 5) Push پکیج‌ها به Azure Artifacts با Windows Auth
+# push packages to Artifacts
 - task: DotNetCoreCLI@2
   displayName: 'Push package to Azure Artifacts via Windows Auth'
   env:
