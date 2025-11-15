@@ -1,61 +1,49 @@
 trigger:
   branches:
     include:
-      - staging
-      - master
+      - stage
+      - prod
 
 pool:
   name: 'Test'
 
-parameters:
-- name: tag
-  displayName: Deployment tag
-  type: string
-  default: stage
-  values:
-  - stage
-  - prod
-
 stages:
-# ───────────── Build Stage ─────────────
 - stage: Build
   jobs:
   - job: Build
     steps:
     - script: |
         echo "=== BUILD STAGE ==="
-        echo "Source branch : $(Build.SourceBranch)"
-        echo "Tag (param)   : ${{ parameters.tag }}"
+        echo "Source branch      : $(Build.SourceBranch)"
+        echo "Source branch name : $(Build.SourceBranchName)"
       displayName: 'Dummy build'
 
-# ───────────── Deploy to STAGING ─────────────
-- stage: DeployStaging
+- stage: DeployStage
+  dependsOn: Build
   condition: and(
                succeeded(),
-               eq(variables['Build.SourceBranch'], 'refs/heads/staging'),
-               eq('${{ parameters.tag }}', 'stage')
+               eq(variables['Build.SourceBranchName'], 'stage')
              )
   jobs:
-  - job: DeployToStaging
+  - job: DeployToStage
     steps:
     - script: |
         echo "=== DEPLOY TO STAGING ==="
         echo "Branch        : $(Build.SourceBranch)"
-        echo "Tag (param)   : ${{ parameters.tag }}"
+        echo "BranchName    : $(Build.SourceBranchName)"
       displayName: 'Dummy deploy staging'
 
-# ───────────── Deploy to PRODUCTION ─────────────
-- stage: DeployProduction
+- stage: DeployProd
+  dependsOn: Build
   condition: and(
                succeeded(),
-               eq(variables['Build.SourceBranch'], 'refs/heads/master'),
-               eq('${{ parameters.tag }}', 'prod')
+               eq(variables['Build.SourceBranchName'], 'prod')
              )
   jobs:
-  - job: DeployToProduction
+  - job: DeployToProd
     steps:
     - script: |
         echo "=== DEPLOY TO PRODUCTION ==="
         echo "Branch        : $(Build.SourceBranch)"
-        echo "Tag (param)   : ${{ parameters.tag }}"
+        echo "BranchName    : $(Build.SourceBranchName)"
       displayName: 'Dummy deploy production'
