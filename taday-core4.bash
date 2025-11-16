@@ -5,14 +5,13 @@ trigger:
       - develop
 
 pool:
-  name: Test
-
+  name: 'CoreLibraryPublish'
+  
 variables:
   buildConfiguration: 'Release'
+  packageVersion: '8.0.$(Build.BuildId)'
 
 steps:
-- checkout: self
-
 - task: UseDotNet@2
   displayName: 'Install .NET 9 SDK'
   env:
@@ -41,21 +40,21 @@ steps:
       --configuration $(buildConfiguration)
       /p:GeneratePackageOnBuild=true
       /p:PackageOutputPath=$(Build.ArtifactStagingDirectory)
+      /p:Version=$(packageVersion)
+      /p:PackageVersion=$(packageVersion)
+
+- script: |
+    echo "=== LIST NUPKGs IN $(Build.ArtifactStagingDirectory) ==="
+    dir "$(Build.ArtifactStagingDirectory)"
+  displayName: 'List nupkg files'
 
 - task: DotNetCoreCLI@2
-  displayName: 'Push package to Azure Artifacts via Windows Auth'
+  displayName: 'Push package to Azure Artifacts (Windows Auth)'
   inputs:
     command: 'custom'
     custom: 'nuget'
     arguments: >
       push "$(Build.ArtifactStagingDirectory)\*.nupkg"
-      --source "Taday.CoreLibraryPackages"
+      --source "https://azure.taday.ir/DefaultCollection/_packaging/Taday.CoreLibraryPackages/nuget/v2/"
       --api-key "AzureDevOps"
       --skip-duplicate
-
-- task: PublishPipelineArtifact@1
-  displayName: 'Publish nupkg as pipeline artifact'
-  inputs:
-    targetPath: '$(Build.ArtifactStagingDirectory)'
-    artifact: 'nupkg'
-    publishLocation: 'pipeline'
