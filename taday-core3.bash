@@ -10,6 +10,7 @@ pool:
 variables:
   buildConfiguration: 'Release'
 
+
 steps:
 # بررسی نسخه‌ی فعلی .NET در Agent برای شفافیت
 #- script: dotnet --info
@@ -20,6 +21,9 @@ steps:
 # install SDK version 9.0
 - task: UseDotNet@2
   displayName: 'Install .NET 9 SDK'
+  env:
+    HTTP_PROXY: "http://proxy.tad.local:3128"
+    HTTPS_PROXY: "http://proxy.tad.local:3128"
   inputs:
     packageType: 'sdk'
     version: '9.0.x'
@@ -31,8 +35,6 @@ steps:
 # 3) Restore 
 - task: DotNetCoreCLI@2
   displayName: 'Restore'
-  env:
-    PATH: 'C:\Program Files\dotnet;$(PATH)'
   inputs:
     command: 'restore'
     projects: 'Taday.Corelibrary/Taday.Corelibrary.csproj'
@@ -40,8 +42,6 @@ steps:
 # 4) Build + Pack 
 - task: DotNetCoreCLI@2
   displayName: 'Build & Pack'
-  env:
-    PATH: 'C:\Program Files\dotnet;$(PATH)'
   inputs:
     command: 'build'
     projects: 'Taday.Corelibrary/Taday.Corelibrary.csproj'
@@ -53,8 +53,6 @@ steps:
 # push packages to Artifacts
 - task: DotNetCoreCLI@2
   displayName: 'Push package to Azure Artifacts via Windows Auth'
-  env:
-    PATH: 'C:\Program Files\dotnet;$(PATH)'
   inputs:
     command: 'custom'
     custom: 'nuget'
