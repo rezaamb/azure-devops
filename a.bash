@@ -1,0 +1,52 @@
+trigger:
+  branches:
+    include:
+    - release
+
+
+pool:
+  name: Test
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+  artifactStagingDir: '$(Build.ArtifactStagingDirectory)'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  ${{ if eq(variables['Build.SourceBranchName'], 'master') }}:
+    ASPNETCORE_ENVIRONMENT: 'Production'
+  ${{ elseif eq(variables['Build.SourceBranchName'], 'release') }}:
+    ASPNETCORE_ENVIRONMENT: 'Staging'
+  ${{ else }}:
+    ASPNETCORE_ENVIRONMENT: 'Development'
+
+steps:
+- task: NuGetToolInstaller@1
+  displayName: 'Install NuGet'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore NuGet packages'
+  inputs:
+    command: 'restore'
+    projects: '$(solution)'
+    feedsToUse: 'select'
+    vstsFeed: 'Taday.CoreLibraryPackages'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish solution'
+  inputs:
+    command: 'publish'
+    projects: 'WebApi/WebApi.csproj'
+    arguments: '--configuration $(buildConfiguration) --output $(artifactStagingDir) --no-restore'
+    zipAfterPublish: true
+    publishWebProjects: false
+  env:
+    ASPNETCORE_ENVIRONMENT: $(ASPNETCORE_ENVIRONMENT)
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish artifacts'
+  inputs:
+    pathToPublish: '$(artifactStagingDir)'
+    artifactName: 'webapi-drop'
+    publishLocation: 'Container'
